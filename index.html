@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EspaçoDigital  - Reserva de Espaços</title>
+    <!--Fonte CSS para não precisar sair dessa pasta-->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        
+        let state = {
+            currentPage: 'login',
+            user: null,
+            spaces: [],
+            reservations: [],
+            selectedSpace: null,
+            loginEmail: '',
+            signupName: '',
+            signupEmail: '',
+            bookingDate: '',
+            bookingStart: '',
+            bookingEnd: '',
+            message: { text: '', type: '' }
+        };
+
+        const spaceIcons = {
+            coworking: '💼',
+            sala: '🎯',
+            laboratorio: '🔬',
+            administracao: '📋'
+        };
+
+        function showMessage(text, type = 'success') {
+        state.message = { text, type };
+            render();
+            setTimeout(() => {
+            state.message = { text: '', type: '' };
+            render();
+            }, 4000);
+        }
+
+        async function loadSpaces() {
+            try {
+                const response = await fetch(`${API_URL}/spaces`);
+                state.spaces = await response.json();
+                render();
+            } catch (error) {
+                console.error('Erro ao carregar espaços:', error);
+            }
+        }
+
+        async function loadReservations() {
+            try {
+                const response = await fetch(`${API_URL}/reservations`);
+                state.reservations = await response.json();
+                render();
+            } catch (error) {
+                console.error('Erro ao carregar reservas:', error);
+            }
+        }
+
+        async function handleLogin() {
+            try {
+            const response = await fetch(`${API_URL}/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: state.loginEmail })
+                });
+            const data = await response.json();
+                if (response.ok) {
+                    state.user = data.user;
+                    state.currentPage = 'home';
+                    await loadSpaces();
+                    await loadReservations();
+                    showMessage('Login realizado com sucesso!');
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Erro ao fazer login', 'error');
+            }
+        }
+
+        async function handleSignup() {
+            try {
+                const response = await fetch(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome: state.signupName, email: state.signupEmail })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage('Cadastro realizado! Faça login para continuar.');
+                    state.currentPage = 'login';
+                    state.signupName = '';
+                    state.signupEmail = '';
+                    render();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Erro ao criar conta', 'error');
+            }
+        }
+
+        async function handleBooking() {
+            if (!state.bookingDate || !state.bookingStart || !state.bookingEnd) {
+                showMessage('Preencha todos os campos', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/reservations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                    user: state.user.id,
+                    space: state.selectedSpace.id,
+                    data: state.bookingDate,
+                    inicio: state.bookingStart,
+                    fim: state.bookingEnd
+                    })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage('Reserva realizada com sucesso!');
+                    state.selectedSpace = null;
+                    state.bookingDate = '';
+                    state.bookingStart = '';
+                    state.bookingEnd = '';
+                    await loadReservations();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Erro ao criar reserva', 'error');
+            }
+        }
+
+        function handleLogout() {
+            state.user = null;
+            state.currentPage = 'login';
+            showMessage('Logout realizado com sucesso!');
+        }
+
+        function renderLoginPage() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 opacity-10">
+                        <div class="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+                        <div class="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+                    </div>
+                    
+                    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full flex relative z-10 fade-in">
+                        <div class="w-1/2 bg-teal-600 p-12 hidden md:flex flex-col justify-center relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-20">
+                        </div>
+                            <div class="relative z-10">
+                            </div>
+                        </div>
+                        
+                        <div class="w-full md:w-1/2 p-12">
+                            <div class="text-center mb-8">
+                             <h1 class="text-3xl font-bold text-gray-800 mb-2">Bem-Vindo!</h1>
+                                <p class="text-gray-500">Crie a sua conta e comece a reservar espaços</p>
+                            </div>
+                            
+                            ${state.message.text ? `
+                                <div class="mb-4 p-3 rounded-lg ${state.message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                ${state.message.text}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="exemplo@user.com"
+                                        value="${state.loginEmail}"
+                                        onchange="state.loginEmail = this.value"
+                                        onkeypress="if(event.key === 'Enter') handleLogin()"
+                                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
+                                    >
+                                </div>
+                                
+                                <button
+                                    onclick="handleLogin()"
+                                    class="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 rounded-lg transition transform hover:scale-105"
+                                >
+                                    Login
+                                </button>
+                            </div>
+                            
+                            <div class="mt-6 text-center">
+                                <p class="text-gray-600">
+                                    Não tem uma conta? 
+                                    <button
+                                        onclick="state.currentPage = 'signup'; render()"
+                                        class="text-teal-600 hover:text-teal-700 font-semibold"
+                                    >
+                                        Cadastre-se
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSignupPage() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 opacity-10">
+                        <div class="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+                        <div class="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+                    </div>
+                    
+                    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full flex relative z-10 fade-in">
+                        <div class="w-1/2 bg-teal-600 p-12 hidden md:flex flex-col justify-center relative overflow-hidden">
+                            <div class="absolute inset-0 opacity-20">
+                            </div>
+                            <div class="relative z-10">
+                                <h2 class="text-4xl font-bold text-white mb-4">Junte-se a nós</h2>
+                                <p class="text-teal-100 text-lg">Crie sua conta e comece a reservar espaços agora!</p>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full md:w-1/2 p-12">
+                            <div class="text-center mb-8">
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Crie sua conta</h1>
+                                <p class="text-gray-500">Agora é a sua hora de reservas espaços</p>
+                            </div>
+                            
+                            ${state.message.text ? `
+                                <div class="mb-4 p-3 rounded-lg ${state.message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                    ${state.message.text}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="Seu Nome"
+                                        value="${state.signupName}"
+                                        onchange="state.signupName = this.value"
+                                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
+                                    >
+                                </div>
+                                
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="exemplo@email.com"
+                                        value="${state.signupEmail}"
+                                        onchange="state.signupEmail = this.value"
+                                        onkeypress="if(event.key === 'Enter') handleSignup()"
+                                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
+                                    >
+                                </div>
+                                
+                                <button
+                                    onclick="handleSignup()"
+                                    class="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 rounded-lg transition transform hover:scale-105"
+                                >
+                                    Cadastrar-se
+                                </button>
+                            </div>
+                            
+                            <div class="mt-6 text-center">
+                                <p class="text-gray-600">
+                                    Já tem uma conta?
+                                    <button
+                                onclick="state.currentPage = 'login'; render()"
+                                        class="text-teal-600 hover:text-teal-700 font-semibold"
+                                    >
+                                        Entrar
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHomePage() {
+            return `
+                <div class="min-h-screen bg-gray-50">
+                    <header class="bg-white shadow-sm sticky top-0 z-50">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="flex justify-between items-center py-4">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <h1 class="text-2xl font-bold text-gray-900">SpaceHub</h1>
+                                </div>
+                                
+                                <nav class="hidden md:flex space-x-8">
+                                    <button onclick="state.currentPage = 'home'; render()" class="text-teal-600 hover:text-teal-600 font-medium transition">
+                                        Espaços
+                                    </button>
+                                    <button onclick="state.currentPage = 'reservations'; render()" class="text-gray-600 hover:text-teal-600 font-medium transition">
+                                        Minhas Reservas
+                                    </button>
+                                </nav>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <div class="hidden md:block text-right">
+                                        <p class="text-sm font-medium text-gray-900">${state.user.nome}</p>
+                                        <p class="text-xs text-gray-500">${state.user.email}</p>
+                                    </div>
+                                    <button
+                                        onclick="handleLogout()"
+                                        class="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
+                                    >
+                                        <span class="hidden md:inline">Sair</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    ${state.message.text ? `
+                        <div class="max-w-7xl mx-auto px-4 mt-4">
+                            <div class="p-4 rounded-lg ${state.message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                ${state.message.text}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div class="text-center mb-12 fade-in">
+                            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                                Explore <span class="text-teal-600">Nossos Espaços</span>
+                            </h2>
+                            <p class="text-gray-600 text-lg">Escolha o ambiente perfeito para suas atividades</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 fade-in">
+                            ${state.spaces.map(space => `
+                                <div
+                                    onclick="state.selectedSpace = ${JSON.stringify(space).replace(/"/g, '&quot;')}; render(); setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 100)"
+                                    class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1 cursor-pointer"
+                                >
+                                    <div class="h-48 bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
+                                        <span class="text-7xl">${spaceIcons[space.id] || '🏢'}</span>
+                                    </div>
+                                    <div class="p-6">
+                                        <h3 class="text-xl font-bold text-gray-900 mb-2">${space.nome}</h3>
+                                        <p class="text-gray-600 text-sm mb-4">${space.descricao}</p>
+                                        <div class="flex items-center text-gray-500 text-sm">
+                                            <span>👥 Até ${space.capacidade} pessoas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        ${state.selectedSpace ? `
+                            <div class="mt-12 bg-white rounded-2xl shadow-lg p-8 fade-in">
+                                <h3 class="text-2xl font-bold text-gray-900 mb-6">
+                                    Reservar: ${state.selectedSpace.nome}
+                                </h3>
+                                
+                                <div class="space-y-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                📅 Data
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value="${state.bookingDate}"
+                                                onchange="state.bookingDate = this.value"
+                                                min="${new Date().toISOString().split('T')[0]}"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 outline-none"
+                                            >
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                🕐 Horário Início
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value="${state.bookingStart}"
+                                                onchange="state.bookingStart = this.value"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 outline-none"
+                                            >
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                🕐 Horário Fim
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value="${state.bookingEnd}"
+                                                onchange="state.bookingEnd = this.value"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 outline-none"
+                                            >
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex space-x-4">
+                                        <button
+                                            onclick="handleBooking()"
+                                            class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 rounded-lg transition"
+                                        >
+                                            Confirmar Reserva
+                                        </button>
+                                        <button
+                                            onclick="state.selectedSpace = null; render()"
+                                            class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderReservationsPage() {
+            const userReservations = state.reservations.filter(r => r.user === state.user.id);
+            
+            return `
+                <div class="min-h-screen bg-gray-50">
+                    <header class="bg-white shadow-sm sticky top-0 z-50">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="flex justify-between items-center py-4">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <h1 class="text-2xl font-bold text-gray-900">SpaceHub</h1>
+                                </div>
+                                
+                                <nav class="hidden md:flex space-x-8">
+                                    <button onclick="state.currentPage = 'home'; render()" class="text-gray-600 hover:text-teal-600 font-medium transition">
+                                        Espaços
+                                    </button>
+                                    <button onclick="state.currentPage = 'reservations'; render()" class="text-teal-600 hover:text-teal-600 font-medium transition">
+                                        Minhas Reservas
+                                    </button>
+                                </nav>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <div class="hidden md:block text-right">
+                                        <p class="text-sm font-medium text-gray-900">${state.user.nome}</p>
+                                        <p class="text-xs text-gray-500">${state.user.email}</p>
+                                    </div>
+                                    <button
+                                        onclick="handleLogout()"
+                                        class="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
+                                    >
+                                        <span class="hidden md:inline">Sair</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    ${state.message.text ? `
+                        <div class="max-w-7xl mx-auto px-4 mt-4">
+                            <div class="p-4 rounded-lg ${state.message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                ${state.message.text}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-8">Minhas Reservas</h2>
+                        
+                        ${userReservations.length === 0 ? `
+                            <div class="bg-white rounded-2xl shadow-lg p-12 text-center fade-in">
+                                <p class="text-gray-600 text-lg mb-4">📅 Você ainda não tem reservas</p>
+                                <button
+                                    onclick="state.currentPage = 'home'; render()"
+                                    class="mt-4 px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition"
+                                >
+                                    Fazer uma Reserva
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                ${userReservations.map(reservation => {
+                                    const space = state.spaces.find(s => s.id === reservation.space);
+                                    return `
+                                        <div class="bg-white rounded-2xl shadow-lg p-6 fade-in">
+                                            <div class="flex items-start justify-between mb-4">
+                                                <div>
+                                                    <h3 class="text-xl font-bold text-gray-900">${space?.nome || 'Espaço'}</h3>
+                                                    <p class="text-gray-600 text-sm">${space?.descricao || ''}</p>
+                                                </div>
+                                                <span class="text-4xl">${spaceIcons[reservation.space] || '🏢'}</span>
+                                            </div>
+                                            
+                                            <div class="space-y-2 text-sm text-gray-600">
+                                                <div class="flex items-center">
+                                                    <span class="mr-2">📅</span>
+                                                    <span>${new Date(reservation.data).toLocaleDateString('pt-BR')}</span>
+                                                </div>
+                                                <div class="flex items-center">
+                                                    <span class="mr-2">🕐</span>
+                                                    <span>${reservation.inicio} - ${reservation.fim}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `}
+                    </main>
+                </div>
+            `;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.currentPage === 'login') {
+                app.innerHTML = renderLoginPage();
+            } else if (state.currentPage === 'signup') {
+                app.innerHTML = renderSignupPage();
+            } else if (state.currentPage === 'home') {
+                app.innerHTML = renderHomePage();
+            } else if (state.currentPage === 'reservations') {
+                app.innerHTML = renderReservationsPage();
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>
