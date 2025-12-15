@@ -17,10 +17,11 @@ exports.getSpaceById = async (req, res) => {
     const ref = db.ref(`spaces/${req.params.id}`);
     const snapshot = await ref.once("value");
     if (!snapshot.exists()) {
-      return res.status(404).json({ message: "Espaço não encontrado." });
+    return res.status(404).json({ message: "Espaço não encontrado." });
     }
     res.json(snapshot.val());
   } catch (error) {
     res.status(500).json({ message: "Erro ao buscar espaço.", error });
   }
+
 };
