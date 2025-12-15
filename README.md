@@ -23,5 +23,24 @@ Confirme a reserva
 Clique em "Minhas Reservas" no menu
 Visualize todas suas reservas-->
 
-
+OBS MUITO IMPORTANTE: O SITE ESTA COM PROBLEMAS PARA SER ENVIADO PELO VS CODE DIRETAMENTE, ENTÃO TIVE QUE MANDAR DA FORMA QUE ESTÁ NESTE MOMENTO, PARA FACILITAR A ESTRUTURA DO SITE ESTA ASSIM; 
+projeto/
+├── backend/
+│   ├── controllers/      
+│   ├── node_modules/
+│   ├── routes/            
+│   ├── firebase.js   
+│   ├── firebase-service.json 
+│   ├── server.js 
+│   ├── .env
+│   ├── seed.js        
+│   ├── package-lock
+│   └── package.json       
+│
+└── frontend/
+    └── src/
+        └── firebase
+             └── config
+    └── public/
+        └── index.html     
 
