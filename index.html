@@ -538,23 +538,24 @@
         }
 
         function render() {
-            const app = document.getElementById('app');
-            
-            if (state.currentPage === 'login') {
-                app.innerHTML = renderLoginPage();
-            } else if (state.currentPage === 'signup') {
-                app.innerHTML = renderSignupPage();
-            } else if (state.currentPage === 'home') {
-                app.innerHTML = renderHomePage();
-            } else if (state.currentPage === 'reservations') {
-                app.innerHTML = renderReservationsPage();
-            }
-        }
+    const app = document.getElementById('app');  // ← Corrigir aqui
+    
+    if (state.currentPage === 'login') {
+        app.innerHTML = renderLoginPage();
+    } else if (state.currentPage === 'signup') {
+        app.innerHTML = renderSignupPage();
+    } else if (state.currentPage === 'home') {
+        app.innerHTML = renderHomePage();
+    } else if (state.currentPage === 'reservations') {
+        app.innerHTML = renderReservationsPage();
+    }
+}
 
         render();
     </script>
 </body>
 </html>
+
 
 
 
