@@ -1,4 +1,4 @@
-const db = require("../firebase");
+const db = require("./firebase");
 
 //Agenda de espaços disponíveis
 exports.getSpaces = async (req, res) => {
@@ -25,3 +25,4 @@ exports.getSpaceById = async (req, res) => {
   }
 
 };
+
