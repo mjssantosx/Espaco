@@ -1,4 +1,4 @@
-const db = require("../firebase");
+const db = require("./firebase");
 
 //Na parte do cadastro de usuários essa parte do código cria um novo usuário (Lembrar)
 exports.createUser = async (req, res) => {
@@ -86,3 +86,4 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ message: "Erro ao atualizar usuário.", error });
   }
 };
+
