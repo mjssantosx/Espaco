@@ -9,9 +9,9 @@ app.use(cors());
 app.use(express.json());
 
 //Aqui são as rotas que serão importadas
-const usersRoutes = require("./routes/users.routes");
-const spacesRoutes = require("./routes/spaces.routes");
-const reservationsRoutes = require("./routes/reservations.routes");
+const usersRoutes = require("./users.routes");
+const spacesRoutes = require("./spaces.routes");
+const reservationsRoutes = require("./reservations.routes");
 
 app.use("/api/users", usersRoutes);
 app.use("/api/spaces", spacesRoutes);
@@ -23,4 +23,5 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+
 });
