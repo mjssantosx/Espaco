@@ -1,4 +1,4 @@
-const db = require("../firebase");
+const db = require("./firebase");
 
 //Esse comando será utlizado para verificar se tem conflito entre as reservas que serão feitas pelos usuários e as reservas que já existem no banco de dados
 exports.createReservation = async (req, res) => {
@@ -106,4 +106,5 @@ exports.getReservations = async (req, res) => {
       error: error.message 
     });
   }
+
 };
