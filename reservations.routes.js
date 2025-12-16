@@ -3,10 +3,11 @@ const router = express.Router();
 const {
   createReservation,
   getReservations
-} = require("../controllers/reservations.controller");
+} = require("./reservations.controller");
 
 router.post("/", createReservation);
 
 router.get("/", getReservations);
+
 
 module.exports = router;
